@@ -73,9 +73,34 @@ class CIgnoreTree:
                 continue
             
             if cPredicate.Ignore(szFile):
-                arrNewIgnoreList.append(szLine)            
+                arrNewIgnoreList.append(szLine)
+                
+        # Report changes
+        m_arrInsertions = []
+        m_arrDeletions  = []
         
+        for szLine in arrNewIgnoreList:
+            if szLine not in self.m_linesInside:
+                m_arrInsertions.append(szLine)
+                
+        for szLine in self.m_linesInside:
+            if szLine not in arrNewIgnoreList:
+                m_arrDeletions.append(szLine)
+        
+        bChanges = False
+        
+        print(self.m_szIgnorePath + ":")
+        if len(m_arrInsertions) == 0 and len(m_arrDeletions) == 0:
+            print("\tNo changes")
+        else:
+            bChanges = True
+            print("\tAdditions:" + "".join(["\n\t\t" + line for line in m_arrInsertions]))
+            print("\tDeletions:" + "".join(["\n\t\t" + line for line in m_arrDeletions]))
+            
+        # Update the file
         self.m_linesInside = arrNewIgnoreList
+        
+        return bChanges
     
 def traverseDir(szDirRoot, szGitMetaDir, currentTree, arrIgnoreTrees):
     # Skip .git directory
@@ -111,10 +136,11 @@ def main():
     traverseDir(szGitRootDir, szGitMetaDir, None, arrIgnoreTrees)
 
     # Process each tree
+    bChanges = False
     for cTree in arrIgnoreTrees:
-        cTree.Run()
+        bChanges = bChanges or cTree.Run()
     
-    return 0
+    return int(bChanges)
     
 if __name__ == '__main__':
     sys.exit(main())
